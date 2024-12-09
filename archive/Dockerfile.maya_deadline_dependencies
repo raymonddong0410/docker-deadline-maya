@@ -1,0 +1,68 @@
+FROM rockylinux:9
+
+# Install required system dependencies
+RUN dnf -y install \
+    mesa-libGLw \
+    mesa-libGLU \
+    libglvnd*64 \
+    libXpm \
+    libXcomposite \
+    gamin \
+    e2fsprogs-libs \
+    glibc \
+    zlib \
+    libSM \
+    libICE \
+    tcsh \
+    pulseaudio-libs \
+    libxslt \
+    alsa-lib \
+    xorg-x11-fonts-ISO8859-1-100dpi \
+    xorg-x11-fonts-ISO8859-1-75dpi \
+    liberation-mono-fonts \
+    liberation-fonts-common \
+    liberation-sans-fonts \
+    liberation-serif-fonts \
+    libpng12 \
+    libtiff
+
+# Symlink for compatibility
+RUN ln -s /usr/lib64/libtiff.so.5 /usr/lib64/libtiff.so.3
+
+# Update and install additional development tools
+RUN dnf update -y && \
+    dnf install -y \
+        nano \
+        csh \
+        elfutils \
+        gcc \
+        git \
+        mesa-libGL-devel \
+        tcsh \
+        xorg-x11-server-Xorg \
+        xorg-x11-server-Xvfb \
+        wget \
+        python3 \
+        python3-pip \
+        libGL \
+        libX11 \
+        fontconfig \
+        freetype
+
+# Install the "Server with GUI" group package
+RUN dnf groupinstall -y "Server with GUI" --allowerasing
+
+# Clean up packages
+RUN dnf clean all
+
+# Set env vars for Maya
+ENV LIBQUICKTIME_PLUGIN_DIR=/usr/autodesk/maya/lib
+ENV DISPLAY=:99
+
+RUN echo "# Start Xvfb" >> ~/.bashrc && \
+    echo "Xvfb :99 -screen 0 1024x768x16 2>/dev/null &" >> ~/.bashrc && \
+    echo "while ! ps aux | \grep -q '[0]:00 Xvfb :99 -screen 0 1024x768x16';" >> ~/.bashrc && \
+    echo "  do echo 'Waiting for Xvfb...'; sleep 1; done"
+
+# Set working directory
+WORKDIR /root

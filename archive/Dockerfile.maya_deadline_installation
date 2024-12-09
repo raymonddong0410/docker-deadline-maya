@@ -1,0 +1,46 @@
+FROM localhost/rockylinux-base:latest
+
+# RUN dnf install -y wget python3 python3-pip
+
+# Download and unpack Maya
+RUN wget https://efulfillment.autodesk.com/NetSWDLD/2025/MAYA/1AAEB4DA-FE7D-3C8A-A4F4-C217F55C55BA/ESD/Autodesk_Maya_2025_Linux_64bit.tgz -O maya.tgz && \
+    mkdir /maya && tar -xvf maya.tgz -C /maya && \
+    rm maya.tgz && \
+    rpm -Uvh /maya/Packages/Maya*.rpm && \
+    rm -r /maya
+
+RUN echo alias hpython="\"/usr/autodesk/maya/bin/mayapy\"" >> ~/.bashrc && \
+    echo alias hpip="\"mayapy -m pip\"" >> ~/.bashrc
+
+# Set the Maya location and add it to the PATH
+ENV MAYA_LOCATION=/usr/autodesk/maya/
+ENV PATH=$MAYA_LOCATION/bin:$PATH
+
+RUN mkdir /var/tmp/runtime-root && \
+    chmod 0700 /var/tmp/runtime-root
+ENV XDG_RUNTIME_DIR=/var/tmp/runtime-root
+
+ENV MAYA_DISABLE_CIP=1
+
+# Download and unpack Deadline
+RUN wget https://thinkbox-installers.s3.us-west-2.amazonaws.com/Releases/Deadline/10.4/2_10.4.0.10/Deadline-10.4.0.10-linux-installers.tar -O deadline.tar && \
+    mkdir /deadline && \
+    tar -xvf deadline.tar -C /deadline && \
+    cd /deadline && \
+    ./install.sh -n && \
+    cd / && \
+    rm -rf deadline.tar /deadline
+
+# Set up Deadline environment variables
+ENV DEADLINE_PATH=/opt/Deadline
+ENV PATH=$DEADLINE_PATH/bin:$PATH
+
+# Install Python dependencies for Maya and Deadline
+RUN /usr/autodesk/maya/bin/mayapy -m pip install \
+    openpyxl \
+    pandas \
+    numpy \
+    requests
+
+# Set working directory
+WORKDIR /root
